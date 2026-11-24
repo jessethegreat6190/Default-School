@@ -67,16 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo && $canManage) {
         }
         if ($action === 'reverse_payment') {
             $pid=(int)$_POST['payment_id']; $reason=trim($_POST['reason'] ?? ''); if($reason==='') throw new RuntimeException('Reversal reason required.');
-            $st=$pdo->prepare('SELECT * FROM payments WHERE id=? AND school_id=? FOR UPDATE'); $st->execute([$pid,$schoolId]); $p=$st->fetch();
-            if(!$p) throw new RuntimeException('Payment not found.'); if(($p['status']??'')==='reversed') throw new RuntimeException('Payment already reversed.');
+            $st=$pdo->prepare('SELECT * FROM payments WHERE id=? AND school_id=? FOR UPDATE'); $st->execute([$pid,$schoolId]); $payRow=$st->fetch();
+            if(!$payRow) throw new RuntimeException('Payment not found.'); if(($payRow['status']??'')==='reversed') throw new RuntimeException('Payment already reversed.');
             $pdo->prepare('UPDATE payments SET status="reversed", reversed_at=NOW(), reversed_by=?, reversal_reason=? WHERE id=?')->execute([$user['id'],$reason,$pid]);
-            $pdo->prepare('UPDATE fee_accounts SET balance = balance + ? WHERE student_id=?')->execute([(float)$p['amount'],(int)$p['student_id']]);
-            if (!empty($p['invoice_id'])) {
-                $invId=(int)$p['invoice_id'];
-                $pdo->prepare('UPDATE invoices SET paid_amount=GREATEST(paid_amount-?,0), balance_amount=LEAST(total_amount,GREATEST(total_amount-(paid_amount-?),0)), status=CASE WHEN GREATEST(paid_amount-?,0)<=0 THEN "unpaid" WHEN GREATEST(paid_amount-?,0) < total_amount THEN "partial" ELSE "paid" END WHERE id=? AND school_id=?')->execute([(float)$p['amount'],(float)$p['amount'],(float)$p['amount'],(float)$p['amount'],$invId,$schoolId]);
-                if (DB::hasTable('invoice_instalments')) { $pdo->prepare('UPDATE invoice_instalments SET paid_amount=0, status="unpaid" WHERE invoice_id=?')->execute([$invId]); $pdo->prepare('SELECT COALESCE(SUM(amount),0) a, COALESCE(SUM(CASE WHEN status="posted" THEN amount ELSE 0 END),0) p FROM payments WHERE invoice_id=?')->execute([$invId]); /* recalc below */ }
+            $pdo->prepare('UPDATE fee_accounts SET balance = balance + ? WHERE student_id=?')->execute([(float)$payRow['amount'],(int)$payRow['student_id']]);
+            if (!empty($payRow['invoice_id'])) {
+                $invId=(int)$payRow['invoice_id'];
+                $sumSt=$pdo->prepare('SELECT COALESCE(SUM(amount),0) FROM payments WHERE invoice_id=? AND school_id=? AND status="posted"'); $sumSt->execute([$invId,$schoolId]); $postedSum=(float)$sumSt->fetchColumn();
+                $pdo->prepare('UPDATE invoices SET paid_amount=?, balance_amount=GREATEST(total_amount-?,0), status=CASE WHEN ?<=0 THEN "unpaid" WHEN ? < total_amount THEN "partial" ELSE "paid" END WHERE id=? AND school_id=?')->execute([$postedSum,$postedSum,$postedSum,$postedSum,$invId,$schoolId]);
+                if (DB::hasTable('invoice_instalments')) {
+                    $pdo->prepare('UPDATE invoice_instalments SET paid_amount=0, status="unpaid" WHERE invoice_id=?')->execute([$invId]);
+                    $rem=$postedSum; $inst=$pdo->prepare('SELECT * FROM invoice_instalments WHERE invoice_id=? ORDER BY instalment_no ASC'); $inst->execute([$invId]);
+                    foreach($inst->fetchAll() as $ins){ $due=max(0,(float)$ins['amount']); $pay=min($due,$rem); $rem=max(0,$rem-$pay); $st=($pay+0.001>=$due && $due>0)?'paid':($pay>0?'partial':'unpaid'); $pdo->prepare('UPDATE invoice_instalments SET paid_amount=?, status=? WHERE id=?')->execute([$pay,$st,$ins['id']]); }
+                }
             }
-            Audit::log('payment.reverse','payment',$pid,null,['reason'=>$reason]); $message='Payment reversed.';
+            Audit::log('payment.reverse','payment',$pid,null,['reason'=>$reason]); $message='Payment reversed and balances recalculated.';
         }
         if ($action === 'add_expense') {
             $stmt=$pdo->prepare('INSERT INTO expenses (school_id,category,description,amount,currency,expense_date,paid_to,reference,recorded_by) VALUES (?,?,?,?,?,?,?,?,?)');
@@ -154,6 +159,13 @@ if ($pdo) {
   </div>
 </div>
 <div class="card">
+  <div class="section-title"><h3>Invoice Instalments</h3><span class="muted">Recent invoice schedules</span></div>
+  <table class="compact"><thead><tr><th>Invoice</th><th>Instalment</th><th>Due</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead><tbody>
+    <?php $instRows=[]; if($pdo && DB::hasTable('invoice_instalments')){ $st=$pdo->prepare('SELECT ii.*, i.invoice_no, s.student_no,s.first_name,s.last_name FROM invoice_instalments ii JOIN invoices i ON i.id=ii.invoice_id JOIN students s ON s.id=i.student_id WHERE i.school_id=? ORDER BY ii.due_date IS NULL, ii.due_date ASC, ii.id DESC LIMIT 30'); $st->execute([$schoolId]); $instRows=$st->fetchAll(); }
+    foreach($instRows as $ir): ?><tr><td><?= e($ir['invoice_no'].' - '.$ir['student_no']) ?></td><td>#<?= e($ir['instalment_no']) ?></td><td><?= e($ir['due_date']?:'-') ?></td><td><?= e(money($ir['amount'])) ?></td><td><?= e(money($ir['paid_amount'])) ?></td><td><span class="badge <?= $ir['status']==='paid'?'ok':'warn' ?>"><?= e($ir['status']) ?></span></td></tr><?php endforeach; if(!$instRows): ?><tr><td colspan="6" class="muted">No instalments yet.</td></tr><?php endif; ?>
+  </tbody></table>
+</div>
+<div class="card">
   <h3>Expenses</h3>
   <?php if($canManage): ?><form method="post" class="grid grid-4" style="margin-bottom:12px;"><?= CSRF::field() ?><input type="hidden" name="action" value="add_expense">
     <label>Category<input class="input" name="category" required></label><label>Description<input class="input" name="description" required></label><label>Amount<input class="input" name="amount" type="number" step="0.01" required></label><label>Date<input class="input" type="date" name="expense_date" value="<?= e(date('Y-m-d')) ?>" required></label>
@@ -163,6 +175,8 @@ if ($pdo) {
     <?php foreach($expenses as $ex): ?><tr><td><?= e($ex['expense_date']) ?></td><td><?= e($ex['category']) ?></td><td><?= e($ex['description']) ?></td><td><?= e(money($ex['amount'])) ?></td></tr><?php endforeach; if(!$expenses): ?><tr><td colspan="4" class="muted">No expenses yet.</td></tr><?php endif; ?>
   </tbody></table>
 </div>
+
+
 
 
 
