@@ -35,9 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canManage) {
             $to = trim((string)($_POST['to'] ?? ''));
             $msg = trim((string)($_POST['message'] ?? 'SchoolGate test notification'));
             $id = Notifier::queue((int)($user['school_id']??1),'test',$to,$ch,'test','Test notification',$msg,'settings','notifications',$user['id']);
-            $res = Notifier::providerFor($ch)->send($ch,$to,$msg,['title'=>'Test notification']);
-            $pdo->prepare('UPDATE notifications SET status=?, provider_ref=?, sent_at=? WHERE id=?')->execute([$res['ok']?'sent':'failed',$res['ref']??($res['error']??null),$res['ok']?date('Y-m-d H:i:s'):null,$id]);
+            $res = Notifier::dispatch($id);
             $message = $res['ok'] ? 'Test sent. Ref: '.($res['ref']??'ok') : 'Test failed: '.($res['error']??'unknown');
+        }
+        if ($action === 'retry_notification') {
+            $nid = (int)($_POST['notification_id'] ?? 0);
+            $res = Notifier::dispatch($nid);
+            Audit::log('notification.retry','notification',$nid,null,$res);
+            $message = $res['ok'] ? 'Notification resent.' : 'Retry failed: '.($res['error']??'unknown');
         }
     } catch(Throwable $e){ $error=$e->getMessage(); }
 }
@@ -86,3 +91,18 @@ function drv($cfg,$k,$f,$d='log'){ return e($cfg[$k][$f] ?? $d); }
 
 
 
+
+
+<?php $recentNotifs=[]; $recentWebhooks=[]; if($pdo){ if(DB::hasTable('notifications')){ $st=$pdo->prepare('SELECT * FROM notifications WHERE school_id=? ORDER BY id DESC LIMIT 20'); $st->execute([(int)($user['school_id']??1)]); $recentNotifs=$st->fetchAll(); } if(DB::hasTable('webhook_events')){ $st=$pdo->prepare('SELECT * FROM webhook_events WHERE school_id=? ORDER BY id DESC LIMIT 20'); $st->execute([(int)($user['school_id']??1)]); $recentWebhooks=$st->fetchAll(); } } ?>
+<div class="grid grid-2">
+  <div class="card"><h3>Recent Notifications / Retries</h3>
+    <table class="compact"><thead><tr><th>Time</th><th>Ch</th><th>To</th><th>Status</th><th></th></tr></thead><tbody>
+    <?php foreach($recentNotifs as $n): ?><tr><td><?= e($n['created_at']) ?></td><td><?= e($n['channel']) ?></td><td><?= e($n['recipient_contact']?:'-') ?></td><td><span class="badge <?= $n['status']==='sent'?'ok':'warn' ?>"><?= e($n['status']) ?></span></td><td><?php if($canManage && $n['status']!=='sent'): ?><form method="post" style="display:inline"><?= CSRF::field() ?><input type="hidden" name="action" value="retry_notification"><input type="hidden" name="notification_id" value="<?= e($n['id']) ?>"><button class="btn secondary" style="padding:2px 8px;font-size:.75rem;">Retry</button></form><?php endif; ?></td></tr><?php endforeach; if(!$recentNotifs): ?><tr><td colspan="5" class="muted">No notifications.</td></tr><?php endif; ?>
+    </tbody></table>
+  </div>
+  <div class="card"><h3>Recent Payment Webhook Events</h3>
+    <table class="compact"><thead><tr><th>Time</th><th>Provider</th><th>Ref</th><th>Status</th></tr></thead><tbody>
+    <?php foreach($recentWebhooks as $w): ?><tr><td><?= e($w['created_at']) ?></td><td><?= e($w['provider']) ?></td><td><?= e($w['external_ref']?:'-') ?></td><td><span class="badge <?= in_array($w['status'],['posted','posted_unallocated'])?'ok':($w['status']==='duplicate'?'':'warn') ?>"><?= e($w['status']) ?></span></td></tr><?php endforeach; if(!$recentWebhooks): ?><tr><td colspan="4" class="muted">No webhook events.</td></tr><?php endif; ?>
+    </tbody></table>
+  </div>
+</div>

@@ -11,11 +11,18 @@ $provider = strtolower(trim((string)($_GET['provider'] ?? 'unknown')));
 $token = (string)($_GET['token'] ?? $_SERVER['HTTP_X_SCHOOLGATE_TOKEN'] ?? '');
 $cfg = Settings::get('payments', []);
 $expected = (string)($cfg['webhook_token'] ?? '');
-if ($expected === '' || !hash_equals($expected, $token)) { http_response_code(401); echo json_encode(['ok'=>false,'error'=>'unauthorized']); exit; }
-
+$sig = (string)($_SERVER['HTTP_X_SCHOOLGATE_SIGNATURE'] ?? '');
 $raw = file_get_contents('php://input');
+$authorized = ($expected !== '' && hash_equals($expected, $token));
+if (!$authorized && $expected !== '' && $sig !== '') {
+    $authorized = hash_equals(hash_hmac('sha256', $raw ?: '', $expected), $sig);
+}
+if (!$authorized) { http_response_code(401); echo json_encode(['ok'=>false,'error'=>'unauthorized']); exit; }
+
 $payload = json_decode($raw ?: '[]', true); if (!is_array($payload)) $payload = ['raw'=>$raw];
 $headers = function_exists('getallheaders') ? getallheaders() : [];
+
+
 $schoolId = (int)($cfg['school_id'] ?? 1);
 $pdo = DB::pdo();
 if (!$pdo) { http_response_code(500); echo json_encode(['ok'=>false,'error'=>'db']); exit; }
@@ -56,3 +63,5 @@ try {
 } catch(Throwable $e) {
     http_response_code(500); echo json_encode(['ok'=>false,'error'=>$e->getMessage()]);
 }
+
+

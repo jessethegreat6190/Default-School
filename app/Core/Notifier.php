@@ -23,7 +23,7 @@ final class WebhookNotificationProvider implements NotificationProvider
     {
         $payload = json_encode(['channel'=>$channel,'to'=>$to,'message'=>$message,'meta'=>$meta,'ts'=>time()]);
         $headers = ['Content-Type: application/json'];
-        if ($this->secret !== '') $headers[] = 'X-SchoolGate-Signature: ' . hash_hmac('sha256', $payload, $this->secret);
+        if ($this->secret !== '') $headers[] = 'X-SchoolGate-Signature: ' . hash_hmac('sha256', (string)$payload, $this->secret);
         $ch = curl_init($this->url);
         curl_setopt_array($ch, [CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>$payload,CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>15]);
         $body = curl_exec($ch); $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
@@ -73,16 +73,32 @@ final class Notifier
         return (int)$pdo->lastInsertId();
     }
 
+    public static function dispatch(int $notificationId, int $maxAttempts = 2): array
+    {
+        $pdo = DB::pdo();
+        if (!$pdo) return ['ok'=>false,'error'=>'db'];
+        $st = $pdo->prepare('SELECT * FROM notifications WHERE id=? LIMIT 1'); $st->execute([$notificationId]); $n = $st->fetch();
+        if (!$n) return ['ok'=>false,'error'=>'not found'];
+        $contact = (string)($n['recipient_contact'] ?? '');
+        if ($contact === '') { $pdo->prepare('UPDATE notifications SET status=? WHERE id=?')->execute(['failed',$notificationId]); return ['ok'=>false,'error'=>'no contact']; }
+        $res = ['ok'=>false,'error'=>'not attempted'];
+        for ($i=1; $i<=$maxAttempts; $i++) {
+            $res = self::providerFor((string)$n['channel'])->send((string)$n['channel'], $contact, (string)$n['message'], ['category'=>$n['category'],'title'=>$n['title']]);
+            if (DB::hasTable('notification_attempts')) {
+                $pdo->prepare('INSERT INTO notification_attempts (notification_id,attempt_no,status,provider_ref,error_message) VALUES (?,?,?,?,?)')
+                    ->execute([$notificationId,$i,$res['ok']?'sent':'failed',$res['ref']??null,$res['error']??null]);
+            }
+            if ($res['ok']) break;
+        }
+        $pdo->prepare('UPDATE notifications SET status=?, provider_ref=?, sent_at=? WHERE id=?')
+            ->execute([$res['ok'] ? 'sent' : 'failed', $res['ref'] ?? ($res['error'] ?? null), $res['ok'] ? date('Y-m-d H:i:s') : null, $notificationId]);
+        return $res;
+    }
+
     public static function queueAndSend(int $schoolId, string $recipientType, ?string $contact, string $channel, string $category, string $title, string $message, ?string $relatedType = null, string|int|null $relatedId = null, ?int $createdBy = null): void
     {
         $id = self::queue($schoolId, $recipientType, $contact, $channel, $category, $title, $message, $relatedType, $relatedId, $createdBy, 'queued');
-        if (!$id || !$contact) return;
-        $res = self::providerFor($channel)->send($channel, $contact, $message, ['category' => $category, 'title' => $title]);
-        $pdo = DB::pdo();
-        if ($pdo) {
-            $stmt = $pdo->prepare('UPDATE notifications SET status=?, provider_ref=?, sent_at=? WHERE id=?');
-            $stmt->execute([$res['ok'] ? 'sent' : 'failed', $res['ref'] ?? ($res['error'] ?? null), $res['ok'] ? date('Y-m-d H:i:s') : null, $id]);
-        }
+        if ($id) self::dispatch($id);
     }
 
     public static function studentGuardianContacts(int $schoolId, int $studentId): array
