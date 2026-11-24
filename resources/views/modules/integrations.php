@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canManage) {
         if ($action === 'save_notifications') {
             $cfg = [
               'default'=>['driver'=>$_POST['default_driver']??'log','webhook_url'=>trim($_POST['default_webhook_url']??''),'webhook_secret'=>trim($_POST['default_webhook_secret']??'')],
-              'sms'=>['driver'=>$_POST['sms_driver']??'log','webhook_url'=>trim($_POST['sms_webhook_url']??''),'webhook_secret'=>trim($_POST['sms_webhook_secret']??'')],
-              'whatsapp'=>['driver'=>$_POST['whatsapp_driver']??'log','webhook_url'=>trim($_POST['whatsapp_webhook_url']??''),'webhook_secret'=>trim($_POST['whatsapp_webhook_secret']??'')],
+              'sms'=>['driver'=>$_POST['sms_driver']??'log','webhook_url'=>trim($_POST['sms_webhook_url']??''),'webhook_secret'=>trim($_POST['sms_webhook_secret']??''),'at_username'=>trim($_POST['sms_at_username']??''),'at_api_key'=>trim($_POST['sms_at_api_key']??''),'at_from'=>trim($_POST['sms_at_from']??''),'twilio_sid'=>trim($_POST['sms_twilio_sid']??''),'twilio_token'=>trim($_POST['sms_twilio_token']??''),'twilio_from'=>trim($_POST['sms_twilio_from']??'')],
+              'whatsapp'=>['driver'=>$_POST['whatsapp_driver']??'log','webhook_url'=>trim($_POST['whatsapp_webhook_url']??''),'webhook_secret'=>trim($_POST['whatsapp_webhook_secret']??''),'twilio_sid'=>trim($_POST['whatsapp_twilio_sid']??''),'twilio_token'=>trim($_POST['whatsapp_twilio_token']??''),'twilio_from'=>trim($_POST['whatsapp_twilio_from']??''),'twilio_whatsapp_from'=>trim($_POST['whatsapp_twilio_whatsapp_from']??''),'meta_token'=>trim($_POST['whatsapp_meta_token']??''),'meta_phone_number_id'=>trim($_POST['whatsapp_meta_phone_number_id']??'')],
               'email'=>['driver'=>$_POST['email_driver']??'mail','from'=>trim($_POST['email_from']??''),'webhook_url'=>trim($_POST['email_webhook_url']??''),'webhook_secret'=>trim($_POST['email_webhook_secret']??'')],
             ];
             Settings::set('notifications', $cfg);
@@ -58,10 +58,19 @@ function drv($cfg,$k,$f,$d='log'){ return e($cfg[$k][$f] ?? $d); }
       <?php foreach(['sms'=>'SMS','whatsapp'=>'WhatsApp','email'=>'Email'] as $k=>$label): $c=$cfg[$k]??[]; ?>
       <div class="empty"><strong><?= $label ?></strong>
         <div class="grid" style="margin-top:8px;">
-          <label>Driver<select class="input" name="<?= $k ?>_driver"><option value="log" <?= ($c['driver']??'')==='log'?'selected':'' ?>>log</option><option value="webhook" <?= ($c['driver']??'')==='webhook'?'selected':'' ?>>webhook</option><?php if($k==='email'): ?><option value="mail" <?= ($c['driver']??'')==='mail'?'selected':'' ?>>mail()</option><?php endif; ?></select></label>
+          <label>Driver<select class="input" name="<?= $k ?>_driver">
+            <option value="log" <?= ($c['driver']??'')==='log'?'selected':'' ?>>log</option>
+            <option value="webhook" <?= ($c['driver']??'')==='webhook'?'selected':'' ?>>webhook</option>
+            <?php if($k==='email'): ?><option value="mail" <?= ($c['driver']??'')==='mail'?'selected':'' ?>>mail()</option><?php endif; ?>
+            <?php if($k==='sms'): ?><option value="africastalking" <?= ($c['driver']??'')==='africastalking'?'selected':'' ?>>africastalking</option><option value="twilio" <?= ($c['driver']??'')==='twilio'?'selected':'' ?>>twilio</option><?php endif; ?>
+            <?php if($k==='whatsapp'): ?><option value="twilio" <?= ($c['driver']??'')==='twilio'?'selected':'' ?>>twilio</option><option value="meta_whatsapp" <?= ($c['driver']??'')==='meta_whatsapp'?'selected':'' ?>>meta_whatsapp</option><?php endif; ?>
+          </select></label>
           <?php if($k==='email'): ?><label>From<input class="input" name="email_from" value="<?= e($c['from']??'') ?>"></label><?php endif; ?>
           <label>Webhook URL<input class="input" name="<?= $k ?>_webhook_url" value="<?= e($c['webhook_url']??'') ?>"></label>
           <label>Webhook secret<input class="input" name="<?= $k ?>_webhook_secret" value="<?= e($c['webhook_secret']??'') ?>"></label>
+          <?php if($k==='sms'): ?><label>Africa's Talking username<input class="input" name="sms_at_username" value="<?= e($c['at_username']??'') ?>"></label><label>Africa's Talking API key<input class="input" name="sms_at_api_key" value="<?= e($c['at_api_key']??'') ?>"></label><label>Africa's Talking from<input class="input" name="sms_at_from" value="<?= e($c['at_from']??'') ?>"></label><?php endif; ?>
+          <?php if($k==='sms' || $k==='whatsapp'): ?><label>Twilio SID<input class="input" name="<?= $k ?>_twilio_sid" value="<?= e($c['twilio_sid']??'') ?>"></label><label>Twilio token<input class="input" name="<?= $k ?>_twilio_token" value="<?= e($c['twilio_token']??'') ?>"></label><label>Twilio from<input class="input" name="<?= $k ?>_twilio_from" value="<?= e($c['twilio_from']??'') ?>"></label><?php endif; ?>
+          <?php if($k==='whatsapp'): ?><label>Twilio WhatsApp from<input class="input" name="whatsapp_twilio_whatsapp_from" value="<?= e($c['twilio_whatsapp_from']??'') ?>"></label><label>Meta token<input class="input" name="whatsapp_meta_token" value="<?= e($c['meta_token']??'') ?>"></label><label>Meta phone number id<input class="input" name="whatsapp_meta_phone_number_id" value="<?= e($c['meta_phone_number_id']??'') ?>"></label><?php endif; ?>
         </div>
       </div>
       <?php endforeach; ?>
@@ -106,4 +115,6 @@ function drv($cfg,$k,$f,$d='log'){ return e($cfg[$k][$f] ?? $d); }
     </tbody></table>
   </div>
 </div>
+
+
 
