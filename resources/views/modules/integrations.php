@@ -102,7 +102,8 @@ function drv($cfg,$k,$f,$d='log'){ return e($cfg[$k][$f] ?? $d); }
   </div>
   <div class="card"><h3>Recent Payment Webhook Events</h3>
     <table class="compact"><thead><tr><th>Time</th><th>Provider</th><th>Ref</th><th>Status</th></tr></thead><tbody>
-    <?php foreach($recentWebhooks as $w): ?><tr><td><?= e($w['created_at']) ?></td><td><?= e($w['provider']) ?></td><td><?= e($w['external_ref']?:'-') ?></td><td><span class="badge <?= in_array($w['status'],['posted','posted_unallocated'])?'ok':($w['status']==='duplicate'?'':'warn') ?>"><?= e($w['status']) ?></span></td></tr><?php endforeach; if(!$recentWebhooks): ?><tr><td colspan="4" class="muted">No webhook events.</td></tr><?php endif; ?>
+    <?php foreach($recentWebhooks as $w): ?><tr><td><?= e($w['created_at']) ?></td><td><?= e($w['provider']) ?></td><td><a href="<?= e(asset_path('/webhook-event?id='.$w['id'])) ?>"><?= e($w['external_ref']?:'view') ?></a></td><td><span class="badge <?= in_array($w['status'],['posted','posted_unallocated'])?'ok':($w['status']==='duplicate'?'':'warn') ?>"><?= e($w['status']) ?></span></td></tr><?php endforeach; if(!$recentWebhooks): ?><tr><td colspan="4" class="muted">No webhook events.</td></tr><?php endif; ?>
     </tbody></table>
   </div>
 </div>
+
