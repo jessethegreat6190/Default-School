@@ -30,7 +30,8 @@ $routes = [
     '/communication' => 'communication',
     '/parent-portal' => 'parent_portal', '/transport' => 'transport',
     '/reports' => 'reports',
-    '/report-card/print' => 'report_card_print', '/reconciliation' => 'reconciliation', '/settings/branding' => 'branding',
+    '/report-card/print' => 'report_card_print',
+    '/receipt/print' => 'receipt_print', '/reconciliation' => 'reconciliation', '/settings/branding' => 'branding',
     '/settings/integrations' => 'integrations',
     '/settings/academic' => 'academic',
     '/setup' => 'setup', '/login' => 'login', '/logout' => 'logout',
@@ -46,7 +47,7 @@ if (!in_array($uri, $publicRoutes, true) && $page !== '404') {
 $titleMap = [
     'dashboard'=>'Dashboard','admissions'=>'Admissions','students'=>'Students','attendance'=>'Attendance & Timetable',
     'pickup'=>'Safe Pickup','academics'=>'Academics & Report Cards','finance'=>'Fees & Finance',
-    'communication'=>'Parent Portal & Communication','parent_portal'=>'Parent Portal','transport'=>'Transport','reports'=>'Reports & Audit','report_card_print'=>'Report Card','reconciliation'=>'Payment Reconciliation',
+    'communication'=>'Parent Portal & Communication','parent_portal'=>'Parent Portal','transport'=>'Transport','reports'=>'Reports & Audit','report_card_print'=>'Report Card','receipt_print'=>'Receipt','reconciliation'=>'Payment Reconciliation',
     'branding'=>'School Branding','integrations'=>'Integrations','academic'=>'Academic Setup','setup'=>'Setup','login'=>'Login','404'=>'Not Found',
 ];
 
@@ -55,6 +56,7 @@ $school = config('school');
 $dbError = DB::error();
 $dbReady = DB::pdo() && DB::hasTable('users');
 require __DIR__ . '/../resources/views/layouts/app.php';
+
 
 
 

@@ -16,15 +16,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $pdo && $canManage) {
             Audit::log('fee_structure.create','fee_structure',$pdo->lastInsertId(),null,$_POST); $message='Fee structure added.';
         }
         if ($action === 'create_invoice') {
-            $studentId=(int)$_POST['student_id']; $amount=(float)$_POST['total_amount'];
+            $studentId=(int)$_POST['student_id']; $baseAmount=(float)$_POST['total_amount'];
+            $prev = (float)($_POST['previous_balance'] ?? 0);
+            $carry = (float)($_POST['carried_forward'] ?? 0);
+            $instalments = max(1,(int)($_POST['instalments'] ?? 1));
+            $amount = $baseAmount + $prev + $carry;
             $invNo = trim($_POST['invoice_no'] ?: ('INV-'.date('Ymd').'-'.random_int(1000,9999)));
-            $stmt=$pdo->prepare('INSERT INTO invoices (school_id,student_id,fee_structure_id,invoice_no,term_id,due_date,total_amount,paid_amount,balance_amount,status,notes,created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-            $stmt->execute([$schoolId,$studentId,$_POST['fee_structure_id']?:null,$invNo,$_POST['term_id']?:null,$_POST['due_date']?:null,$amount,0,$amount,'unpaid',trim($_POST['notes']?:null),$user['id']]);
+            $stmt=$pdo->prepare('INSERT INTO invoices (school_id,student_id,fee_structure_id,invoice_no,term_id,due_date,total_amount,paid_amount,balance_amount,status,notes,created_by,instalments,previous_balance,carried_forward) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+            $stmt->execute([$schoolId,$studentId,$_POST['fee_structure_id']?:null,$invNo,$_POST['term_id']?:null,$_POST['due_date']?:null,$amount,0,$amount,'unpaid',trim($_POST['notes']?:null),$user['id'],$instalments,$prev,$carry]);
             $invId=(int)$pdo->lastInsertId();
             $desc = trim($_POST['description'] ?: 'School fees');
-            $pdo->prepare('INSERT INTO invoice_items (invoice_id,description,amount) VALUES (?,?,?)')->execute([$invId,$desc,$amount]);
+            $pdo->prepare('INSERT INTO invoice_items (invoice_id,description,amount) VALUES (?,?,?)')->execute([$invId,$desc,$baseAmount]);
+            if ($prev > 0) $pdo->prepare('INSERT INTO invoice_items (invoice_id,description,amount) VALUES (?,?,?)')->execute([$invId,'Previous balance',$prev]);
+            if ($carry > 0) $pdo->prepare('INSERT INTO invoice_items (invoice_id,description,amount) VALUES (?,?,?)')->execute([$invId,'Carried forward',$carry]);
             $pdo->prepare('UPDATE fee_accounts SET balance = balance + ? WHERE student_id=?')->execute([$amount,$studentId]);
-            Audit::log('invoice.create','invoice',$invId,null,$_POST); $message="Invoice $invNo created.";
+            Audit::log('invoice.create','invoice',$invId,null,$_POST); $message="Invoice $invNo created (total ".number_format($amount,2).").";
         }
         if ($action === 'record_payment') {
             $studentId=(int)$_POST['student_id']; $amount=(float)$_POST['amount']; $invoiceId=$_POST['invoice_id']!==''?(int)$_POST['invoice_id']:null;
@@ -80,20 +86,21 @@ if ($pdo) {
 <div class="grid grid-2">
   <div class="card">
     <h3>Create Invoice</h3>
-    <?php if($canManage): ?><form method="post"><?= CSRF::field() ?> class="grid">
+    <?php if($canManage): ?><form method="post" class="grid"><?= CSRF::field() ?>
       <input type="hidden" name="action" value="create_invoice">
       <label>Student<select class="input" name="student_id" required><?php foreach($students as $s): ?><option value="<?= e($s['id']) ?>"><?= e($s['student_no'].' - '.$s['first_name'].' '.$s['last_name']) ?></option><?php endforeach; ?></select></label>
       <label>Fee structure<select class="input" name="fee_structure_id"><option value="">Manual</option><?php foreach($structures as $fs): ?><option value="<?= e($fs['id']) ?>" data-amount="<?= e($fs['amount']) ?>" data-name="<?= e($fs['name']) ?>"><?= e($fs['name'].' - '.money($fs['amount'])) ?></option><?php endforeach; ?></select></label>
       <div class="grid grid-2"><label>Invoice No<input class="input" name="invoice_no" placeholder="auto"></label><label>Term<select class="input" name="term_id"><option value="">Optional</option><?php foreach($terms as $t): ?><option value="<?= e($t['id']) ?>"><?= e($t['year_name'].' - '.$t['name']) ?></option><?php endforeach; ?></select></label></div>
       <label>Description<input class="input" name="description" value="School fees"></label>
-      <div class="grid grid-2"><label>Total (UGX)<input class="input" name="total_amount" type="number" step="0.01" required></label><label>Due date<input class="input" type="date" name="due_date"></label></div>
+      <div class="grid grid-3"><label>Base (UGX)<input class="input" name="total_amount" type="number" step="0.01" required></label><label>Previous balance<input class="input" name="previous_balance" type="number" step="0.01" value="0"></label><label>Carried forward<input class="input" name="carried_forward" type="number" step="0.01" value="0"></label></div>
+      <div class="grid grid-2"><label>Instalments<input class="input" name="instalments" type="number" min="1" value="1"></label><label>Due date<input class="input" type="date" name="due_date"></label></div>
       <label>Notes<textarea class="input" name="notes" rows="2"></textarea></label>
       <button class="btn" type="submit">Create Invoice</button>
     </form><?php endif; ?>
   </div>
   <div class="card">
     <h3>Record Payment / Receipt</h3>
-    <?php if($canManage): ?><form method="post"><?= CSRF::field() ?> class="grid">
+    <?php if($canManage): ?><form method="post" class="grid"><?= CSRF::field() ?>
       <input type="hidden" name="action" value="record_payment">
       <label>Student<select class="input" name="student_id" required><?php foreach($students as $s): ?><option value="<?= e($s['id']) ?>"><?= e($s['student_no'].' - '.$s['first_name'].' '.$s['last_name']) ?></option><?php endforeach; ?></select></label>
       <label>Invoice<select class="input" name="invoice_id"><option value="">Unallocated / advance</option><?php foreach($invoices as $i): if($i['status']!=='paid'): ?><option value="<?= e($i['id']) ?>"><?= e($i['invoice_no'].' - '.$i['first_name'].' '.$i['last_name'].' bal '.money($i['balance_amount'])) ?></option><?php endif; endforeach; ?></select></label>
@@ -114,14 +121,14 @@ if ($pdo) {
   </div>
   <div class="card">
     <h3>Recent Payments</h3>
-    <table class="compact"><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Method</th></tr></thead><tbody>
-      <?php foreach($payments as $p): ?><tr><td><?= e($p['receipt_no']) ?></td><td><?= e($p['student_no'].' '.$p['first_name']) ?></td><td><?= e(money($p['amount'])) ?></td><td><?= e($p['method']) ?></td></tr><?php endforeach; if(!$payments): ?><tr><td colspan="4" class="muted">No payments yet.</td></tr><?php endif; ?>
+    <table class="compact"><thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Method</th><th></th></tr></thead><tbody>
+      <?php foreach($payments as $pmt): ?><tr><td><?= e($pmt['receipt_no']) ?></td><td><?= e($pmt['student_no'].' '.$pmt['first_name']) ?></td><td><?= e(money($pmt['amount'])) ?></td><td><?= e($pmt['method']) ?></td><td><a class="btn secondary" style="padding:2px 8px;font-size:.75rem;" href="<?= e(asset_path('/receipt/print?payment_id='.$pmt['id'])) ?>" target="_blank">Print</a></td></tr><?php endforeach; if(!$payments): ?><tr><td colspan="5" class="muted">No payments yet.</td></tr><?php endif; ?>
     </tbody></table>
   </div>
 </div>
 <div class="card">
   <h3>Expenses</h3>
-  <?php if($canManage): ?><form method="post"><?= CSRF::field() ?> class="grid grid-4" style="margin-bottom:12px;"><input type="hidden" name="action" value="add_expense">
+  <?php if($canManage): ?><form method="post" class="grid grid-4" style="margin-bottom:12px;"><?= CSRF::field() ?><input type="hidden" name="action" value="add_expense">
     <label>Category<input class="input" name="category" required></label><label>Description<input class="input" name="description" required></label><label>Amount<input class="input" name="amount" type="number" step="0.01" required></label><label>Date<input class="input" type="date" name="expense_date" value="<?= e(date('Y-m-d')) ?>" required></label>
     <label>Paid to<input class="input" name="paid_to"></label><label>Reference<input class="input" name="reference"></label><div style="display:flex;align-items:end;"><button class="btn" type="submit">Add Expense</button></div>
   </form><?php endif; ?>
@@ -129,6 +136,10 @@ if ($pdo) {
     <?php foreach($expenses as $ex): ?><tr><td><?= e($ex['expense_date']) ?></td><td><?= e($ex['category']) ?></td><td><?= e($ex['description']) ?></td><td><?= e(money($ex['amount'])) ?></td></tr><?php endforeach; if(!$expenses): ?><tr><td colspan="4" class="muted">No expenses yet.</td></tr><?php endif; ?>
   </tbody></table>
 </div>
+
+
+
+
 
 
 

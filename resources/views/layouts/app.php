@@ -18,7 +18,7 @@ $nav = [
     ['href' => '/setup', 'label' => 'Setup', 'key' => 'setup'],
 ];
 $publicPage = in_array($page, ['login','setup','404'], true);
-?><?php if ($page === "report_card_print") { require __DIR__ . "/../modules/report_card_print.php"; return; } ?>
+?><?php if (in_array($page, ["report_card_print","receipt_print"], true)) { require __DIR__ . "/../modules/" . $page . ".php"; return; } ?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -83,6 +83,7 @@ $publicPage = in_array($page, ['login','setup','404'], true);
   <?php endforeach; ?>
 </body>
 </html>
+
 
 
 
