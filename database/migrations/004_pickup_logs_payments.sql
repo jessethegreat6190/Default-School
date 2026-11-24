@@ -1,0 +1,42 @@
+CREATE TABLE IF NOT EXISTS pickup_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  student_id BIGINT UNSIGNED NOT NULL,
+  authorized_pickup_id BIGINT UNSIGNED NULL,
+  collector_name VARCHAR(190) NOT NULL,
+  collector_phone VARCHAR(50) NULL,
+  collector_id_number VARCHAR(100) NULL,
+  relationship VARCHAR(50) NULL,
+  verification_method VARCHAR(50) NOT NULL DEFAULT 'manual',
+  verification_code VARCHAR(50) NULL,
+  otp_code VARCHAR(20) NULL,
+  otp_approved_at TIMESTAMP NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'verified',
+  notes TEXT NULL,
+  checked_out_by BIGINT UNSIGNED NULL,
+  checked_out_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_pl_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_pl_student FOREIGN KEY (student_id) REFERENCES students(id),
+  CONSTRAINT fk_pl_auth FOREIGN KEY (authorized_pickup_id) REFERENCES authorized_pickups(id),
+  CONSTRAINT fk_pl_user FOREIGN KEY (checked_out_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS fee_payments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  student_id BIGINT UNSIGNED NOT NULL,
+  fee_account_id BIGINT UNSIGNED NULL,
+  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  currency VARCHAR(10) NOT NULL DEFAULT 'UGX',
+  method VARCHAR(50) NULL,
+  reference VARCHAR(100) NULL,
+  paid_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  received_by BIGINT UNSIGNED NULL,
+  notes TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_fp_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_fp_student FOREIGN KEY (student_id) REFERENCES students(id),
+  CONSTRAINT fk_fp_account FOREIGN KEY (fee_account_id) REFERENCES fee_accounts(id),
+  CONSTRAINT fk_fp_user FOREIGN KEY (received_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

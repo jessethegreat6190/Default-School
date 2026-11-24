@@ -1,0 +1,50 @@
+CREATE TABLE IF NOT EXISTS transport_routes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  code VARCHAR(50) NULL,
+  description TEXT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tr_school FOREIGN KEY (school_id) REFERENCES schools(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS transport_vehicles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  route_id BIGINT UNSIGNED NULL,
+  plate_number VARCHAR(50) NOT NULL,
+  driver_name VARCHAR(150) NULL,
+  driver_phone VARCHAR(50) NULL,
+  capacity INT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tv_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_tv_route FOREIGN KEY (route_id) REFERENCES transport_routes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS transport_stops (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  route_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  pickup_time TIME NULL,
+  dropoff_time TIME NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_ts_route FOREIGN KEY (route_id) REFERENCES transport_routes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS student_transport (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  student_id BIGINT UNSIGNED NOT NULL,
+  route_id BIGINT UNSIGNED NULL,
+  stop_id BIGINT UNSIGNED NULL,
+  pickup_point VARCHAR(190) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_student_transport (student_id),
+  CONSTRAINT fk_st_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_st_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  CONSTRAINT fk_st_route FOREIGN KEY (route_id) REFERENCES transport_routes(id) ON DELETE SET NULL,
+  CONSTRAINT fk_st_stop FOREIGN KEY (stop_id) REFERENCES transport_stops(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,0 +1,27 @@
+﻿.grid { display: grid; gap: 16px; }
+.grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.card h2, .card h3 { margin: 0 0 10px; }
+.stat { padding: 18px; }
+.stat .label { color: var(--muted); font-size: .85rem; }
+.stat .value { font-size: 1.8rem; font-weight: 700; margin: 6px 0; }
+.stat .meta { font-size: .8rem; color: var(--muted); }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: .75rem; background: var(--surface-2); color: var(--muted); }
+.badge.ok { background: rgba(27,127,74,.12); color: var(--success); }
+.badge.warn { background: rgba(244,180,0,.16); color: #8a6500; }
+.badge.danger { background: rgba(198,40,40,.12); color: var(--danger); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: .92rem; }
+th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.list { margin: 0; padding-left: 18px; color: var(--muted); }
+.list li { margin: 8px 0; }
+.section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+.btn { display:inline-flex; align-items:center; gap:8px; background: var(--brand-primary); color:#fff; border:0; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer; }
+.btn.secondary { background: var(--surface-2); color: var(--text); }
+.empty { padding: 20px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); background: #fbfdff; }
+@media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media (max-width: 700px) { .grid-4, .grid-2 { grid-template-columns: 1fr; } .topbar { flex-direction: column; } }
+.input { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--text); }
+label { display:grid; gap:6px; font-size:.9rem; color:var(--muted); }
+table.compact td, table.compact th { padding:8px 6px; }

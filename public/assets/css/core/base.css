@@ -1,0 +1,38 @@
+﻿:root {
+  --brand-primary: #1f6feb;
+  --brand-secondary: #0b3d91;
+  --brand-accent: #f4b400;
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #eef3fb;
+  --text: #182230;
+  --muted: #64748b;
+  --border: #dbe5f1;
+  --danger: #c62828;
+  --success: #1b7f4a;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+a { color: inherit; text-decoration: none; }
+.app-shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.sidebar { background: linear-gradient(180deg, var(--brand-secondary), #102a56); color: #fff; padding: 24px 16px; display: flex; flex-direction: column; }
+.brand { display: flex; gap: 12px; align-items: center; padding: 0 8px 24px; border-bottom: 1px solid rgba(255,255,255,.15); }
+.brand-logo { width: 44px; height: 44px; border-radius: 10px; background: #fff; object-fit: contain; }
+.brand-name { font-weight: 700; font-size: 1.05rem; }
+.brand-tagline { font-size: .78rem; opacity: .85; line-height: 1.3; }
+.nav { display: flex; flex-direction: column; gap: 4px; margin-top: 20px; }
+.nav-link { padding: 10px 12px; border-radius: 10px; color: rgba(255,255,255,.88); }
+.nav-link:hover, .nav-link.active { background: rgba(255,255,255,.14); color: #fff; }
+.sidebar-foot { margin-top: auto; font-size: .78rem; opacity: .8; padding: 16px 8px 0; }
+.main { padding: 28px; }
+.topbar { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 24px; }
+.eyebrow { margin: 0; color: var(--muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; }
+.topbar h1 { margin: 4px 0 0; font-size: 1.8rem; }
+.topbar-right { display: flex; gap: 10px; align-items: center; }
+.pill { background: rgba(31,111,235,.12); color: var(--brand-primary); padding: 6px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+.muted { color: var(--muted); }
+.content { display: grid; gap: 20px; }
+@media (max-width: 900px) { .app-shell { grid-template-columns: 1fr; } .sidebar { padding: 18px; } .main { padding: 18px; } }

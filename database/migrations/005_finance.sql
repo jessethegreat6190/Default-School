@@ -1,0 +1,86 @@
+CREATE TABLE IF NOT EXISTS fee_structures (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  class_id BIGINT UNSIGNED NULL,
+  term_id BIGINT UNSIGNED NULL,
+  name VARCHAR(150) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  currency VARCHAR(10) NOT NULL DEFAULT 'UGX',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_fs_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_fs_class FOREIGN KEY (class_id) REFERENCES classes(id),
+  CONSTRAINT fk_fs_term FOREIGN KEY (term_id) REFERENCES terms(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS invoices (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  student_id BIGINT UNSIGNED NOT NULL,
+  fee_structure_id BIGINT UNSIGNED NULL,
+  invoice_no VARCHAR(60) NOT NULL,
+  term_id BIGINT UNSIGNED NULL,
+  due_date DATE NULL,
+  total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  balance_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(30) NOT NULL DEFAULT 'unpaid',
+  notes TEXT NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_invoice_no (school_id, invoice_no),
+  CONSTRAINT fk_inv_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_inv_student FOREIGN KEY (student_id) REFERENCES students(id),
+  CONSTRAINT fk_inv_fs FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id),
+  CONSTRAINT fk_inv_term FOREIGN KEY (term_id) REFERENCES terms(id),
+  CONSTRAINT fk_inv_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS invoice_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  invoice_id BIGINT UNSIGNED NOT NULL,
+  description VARCHAR(190) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_ii_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS payments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  student_id BIGINT UNSIGNED NOT NULL,
+  invoice_id BIGINT UNSIGNED NULL,
+  receipt_no VARCHAR(60) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'UGX',
+  method VARCHAR(50) NOT NULL DEFAULT 'cash',
+  provider VARCHAR(50) NULL,
+  provider_reference VARCHAR(100) NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'posted',
+  paid_at DATETIME NOT NULL,
+  received_by BIGINT UNSIGNED NULL,
+  notes TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_receipt_no (school_id, receipt_no),
+  CONSTRAINT fk_pay_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_pay_student FOREIGN KEY (student_id) REFERENCES students(id),
+  CONSTRAINT fk_pay_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id),
+  CONSTRAINT fk_pay_user FOREIGN KEY (received_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS expenses (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'UGX',
+  expense_date DATE NOT NULL,
+  paid_to VARCHAR(190) NULL,
+  reference VARCHAR(100) NULL,
+  recorded_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_exp_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_exp_user FOREIGN KEY (recorded_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

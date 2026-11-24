@@ -1,0 +1,34 @@
+CREATE TABLE IF NOT EXISTS notifications (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  recipient_type VARCHAR(30) NOT NULL,
+  recipient_id BIGINT UNSIGNED NULL,
+  recipient_contact VARCHAR(190) NULL,
+  channel VARCHAR(30) NOT NULL DEFAULT 'sms',
+  category VARCHAR(50) NOT NULL,
+  title VARCHAR(190) NULL,
+  message TEXT NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'queued',
+  provider_ref VARCHAR(100) NULL,
+  related_type VARCHAR(50) NULL,
+  related_id BIGINT UNSIGNED NULL,
+  sent_at TIMESTAMP NULL,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notif_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_notif_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  body TEXT NOT NULL,
+  audience VARCHAR(50) NOT NULL DEFAULT 'all',
+  status VARCHAR(30) NOT NULL DEFAULT 'published',
+  published_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_ann_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_ann_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

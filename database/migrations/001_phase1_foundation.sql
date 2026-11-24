@@ -1,0 +1,119 @@
+-- SchoolGate Phase 1 foundation schema
+CREATE TABLE IF NOT EXISTS schools (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(50) NOT NULL UNIQUE,
+  name VARCHAR(190) NOT NULL,
+  short_name VARCHAR(100) NULL,
+  motto VARCHAR(255) NULL,
+  logo_path VARCHAR(255) NULL,
+  favicon_path VARCHAR(255) NULL,
+  primary_color VARCHAR(20) NULL,
+  secondary_color VARCHAR(20) NULL,
+  accent_color VARCHAR(20) NULL,
+  address TEXT NULL,
+  phone VARCHAR(50) NULL,
+  email VARCHAR(190) NULL,
+  website VARCHAR(190) NULL,
+  timezone VARCHAR(64) NOT NULL DEFAULT 'Africa/Kampala',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS roles (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  label VARCHAR(150) NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  role_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  phone VARCHAR(50) NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'active',
+  last_login_at TIMESTAMP NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_users_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS academic_years (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  is_current TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_academic_years_school FOREIGN KEY (school_id) REFERENCES schools(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS terms (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  academic_year_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  start_date DATE NULL,
+  end_date DATE NULL,
+  is_current TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_terms_year FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS classes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  level VARCHAR(100) NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_classes_school FOREIGN KEY (school_id) REFERENCES schools(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS streams (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  class_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_streams_class FOREIGN KEY (class_id) REFERENCES classes(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS subjects (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  code VARCHAR(50) NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_subjects_school FOREIGN KEY (school_id) REFERENCES schools(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  school_id BIGINT UNSIGNED NULL,
+  user_id BIGINT UNSIGNED NULL,
+  action VARCHAR(150) NOT NULL,
+  entity_type VARCHAR(100) NULL,
+  entity_id VARCHAR(100) NULL,
+  old_values JSON NULL,
+  new_values JSON NULL,
+  ip_address VARCHAR(64) NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_audit_school FOREIGN KEY (school_id) REFERENCES schools(id),
+  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO roles (name, label) VALUES
+('super_admin','Super Admin'),('school_admin','School Admin'),('head_teacher','Head Teacher'),
+('teacher','Teacher'),('finance','Finance'),('gate_staff','Gate Staff'),('parent','Parent')
+ON DUPLICATE KEY UPDATE label=VALUES(label);
+
+INSERT INTO schools (code, name, short_name, motto, logo_path, favicon_path, primary_color, secondary_color, accent_color)
+SELECT 'default','Default School','School','One system. Every child, accounted for.','/schoolgate/public/schools/default/logo.svg','/schoolgate/public/schools/default/favicon.svg','#1f6feb','#0b3d91','#f4b400'
+WHERE NOT EXISTS (SELECT 1 FROM schools WHERE code='default');

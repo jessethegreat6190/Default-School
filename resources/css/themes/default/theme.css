@@ -1,0 +1,6 @@
+﻿/* Default school theme. Override per school in resources/css/themes/{school_code}/theme.css */
+:root {
+  --brand-primary: #1f6feb;
+  --brand-secondary: #0b3d91;
+  --brand-accent: #f4b400;
+}
