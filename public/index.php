@@ -9,6 +9,7 @@ require_once __DIR__ . '/../app/Core/Auth.php';
 require_once __DIR__ . '/../app/Core/Audit.php';
 require_once __DIR__ . '/../app/Core/RBAC.php';
 require_once __DIR__ . '/../app/Core/Notifier.php';
+require_once __DIR__ . '/../app/Core/PaymentWebhook.php';
 require_once __DIR__ . '/../app/Core/CSRF.php';
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $base = rtrim((string) config('app.base_url', ''), '/');
@@ -58,6 +59,7 @@ $school = config('school');
 $dbError = DB::error();
 $dbReady = DB::pdo() && DB::hasTable('users');
 require __DIR__ . '/../resources/views/layouts/app.php';
+
 
 
 
