@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS invoice_instalments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  invoice_id BIGINT UNSIGNED NOT NULL,
+  instalment_no INT NOT NULL,
+  due_date DATE NULL,
+  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(30) NOT NULL DEFAULT 'unpaid',
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_inst_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_inv_inst (invoice_id, instalment_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE payments ADD COLUMN reversed_at DATETIME NULL;
+ALTER TABLE payments ADD COLUMN reversed_by BIGINT UNSIGNED NULL;
+ALTER TABLE payments ADD COLUMN reversal_reason VARCHAR(255) NULL;
+ALTER TABLE notifications ADD COLUMN attempt_count INT NOT NULL DEFAULT 0;
+ALTER TABLE notifications ADD COLUMN next_retry_at DATETIME NULL;
