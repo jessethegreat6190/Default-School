@@ -27,6 +27,7 @@ $routes = [
     '/admissions' => 'admissions', '/students' => 'students',
     '/attendance' => 'attendance', '/pickup' => 'pickup',
     '/academics' => 'academics', '/finance' => 'finance',
+    '/invoice' => 'invoice_detail',
     '/communication' => 'communication',
     '/parent-portal' => 'parent_portal', '/transport' => 'transport',
     '/reports' => 'reports',
@@ -46,7 +47,7 @@ if (!in_array($uri, $publicRoutes, true) && $page !== '404') {
 
 $titleMap = [
     'dashboard'=>'Dashboard','admissions'=>'Admissions','students'=>'Students','attendance'=>'Attendance & Timetable',
-    'pickup'=>'Safe Pickup','academics'=>'Academics & Report Cards','finance'=>'Fees & Finance',
+    'pickup'=>'Safe Pickup','academics'=>'Academics & Report Cards','finance'=>'Fees & Finance','invoice_detail'=>'Invoice Detail',
     'communication'=>'Parent Portal & Communication','parent_portal'=>'Parent Portal','transport'=>'Transport','reports'=>'Reports & Audit','report_card_print'=>'Report Card','receipt_print'=>'Receipt','reconciliation'=>'Payment Reconciliation',
     'branding'=>'School Branding','integrations'=>'Integrations','academic'=>'Academic Setup','setup'=>'Setup','login'=>'Login','404'=>'Not Found',
 ];
@@ -56,6 +57,7 @@ $school = config('school');
 $dbError = DB::error();
 $dbReady = DB::pdo() && DB::hasTable('users');
 require __DIR__ . '/../resources/views/layouts/app.php';
+
 
 
 

@@ -148,7 +148,7 @@ if ($pdo) {
   <div class="card">
     <h3>Recent Invoices</h3>
     <table class="compact"><thead><tr><th>Invoice</th><th>Student</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>
-      <?php foreach($invoices as $i): ?><tr><td><?= e($i['invoice_no']) ?></td><td><?= e($i['student_no'].' '.$i['first_name']) ?></td><td><?= e(money($i['total_amount'])) ?></td><td><?= e(money($i['balance_amount'])) ?></td><td><span class="badge <?= $i['status']==='paid'?'ok':'warn' ?>"><?= e($i['status']) ?></span></td></tr><?php endforeach; if(!$invoices): ?><tr><td colspan="5" class="muted">No invoices yet.</td></tr><?php endif; ?>
+      <?php foreach($invoices as $i): ?><tr><td><a href="<?= e(asset_path('/invoice?id='.$i['id'])) ?>"><?= e($i['invoice_no']) ?></a></td><td><?= e($i['student_no'].' '.$i['first_name']) ?></td><td><?= e(money($i['total_amount'])) ?></td><td><?= e(money($i['balance_amount'])) ?></td><td><span class="badge <?= $i['status']==='paid'?'ok':'warn' ?>"><?= e($i['status']) ?></span></td></tr><?php endforeach; if(!$invoices): ?><tr><td colspan="5" class="muted">No invoices yet.</td></tr><?php endif; ?>
     </tbody></table>
   </div>
   <div class="card">
@@ -175,6 +175,7 @@ if ($pdo) {
     <?php foreach($expenses as $ex): ?><tr><td><?= e($ex['expense_date']) ?></td><td><?= e($ex['category']) ?></td><td><?= e($ex['description']) ?></td><td><?= e(money($ex['amount'])) ?></td></tr><?php endforeach; if(!$expenses): ?><tr><td colspan="4" class="muted">No expenses yet.</td></tr><?php endif; ?>
   </tbody></table>
 </div>
+
 
 
 
