@@ -13,8 +13,10 @@ $guards = [
     'parent_portal' => 'portal.view',
     'transport' => 'dashboard.view',
     'reports' => 'dashboard.view',
-    'branding' => 'dashboard.view',
-    'integrations' => 'dashboard.view',
+    'branding' => 'settings.manage',
+    'integrations' => 'settings.manage',
+    'permissions' => 'settings.manage',
+    'audit' => 'settings.manage',
     'academic' => 'dashboard.view',
 ];
 $perm = $guards[$page] ?? null;
@@ -23,6 +25,7 @@ $view = __DIR__ . '/../modules/' . $page . '.php';
 if (file_exists($view)) require $view;
 else require __DIR__ . '/../modules/404.php';
 ?>
+
 
 
 

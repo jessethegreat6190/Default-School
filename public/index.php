@@ -36,6 +36,8 @@ $routes = [
     '/receipt/print' => 'receipt_print', '/reconciliation' => 'reconciliation', '/settings/branding' => 'branding',
     '/settings/integrations' => 'integrations',
     '/webhook-event' => 'webhook_event',
+    '/settings/permissions' => 'permissions',
+    '/settings/audit' => 'audit',
     '/settings/academic' => 'academic',
     '/setup' => 'setup', '/login' => 'login', '/logout' => 'logout',
 ];
@@ -51,7 +53,7 @@ $titleMap = [
     'dashboard'=>'Dashboard','admissions'=>'Admissions','students'=>'Students','attendance'=>'Attendance & Timetable',
     'pickup'=>'Safe Pickup','academics'=>'Academics & Report Cards','finance'=>'Fees & Finance','invoice_detail'=>'Invoice Detail',
     'communication'=>'Parent Portal & Communication','parent_portal'=>'Parent Portal','transport'=>'Transport','reports'=>'Reports & Audit','report_card_print'=>'Report Card','receipt_print'=>'Receipt','reconciliation'=>'Payment Reconciliation',
-    'branding'=>'School Branding','integrations'=>'Integrations','webhook_event'=>'Webhook Event','academic'=>'Academic Setup','setup'=>'Setup','login'=>'Login','404'=>'Not Found',
+    'branding'=>'School Branding','integrations'=>'Integrations','webhook_event'=>'Webhook Event','permissions'=>'Roles & Permissions','audit'=>'Audit Log','academic'=>'Academic Setup','setup'=>'Setup','login'=>'Login','404'=>'Not Found',
 ];
 
 $title = $titleMap[$page] ?? 'SchoolGate';
@@ -59,6 +61,7 @@ $school = config('school');
 $dbError = DB::error();
 $dbReady = DB::pdo() && DB::hasTable('users');
 require __DIR__ . '/../resources/views/layouts/app.php';
+
 
 
 

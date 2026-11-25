@@ -14,6 +14,8 @@ $nav = [
     ['href' => '/reports', 'label' => 'Reports', 'key' => 'reports'],
     ['href' => '/settings/branding', 'label' => 'Branding', 'key' => 'branding'],
     ['href' => '/settings/integrations', 'label' => 'Integrations', 'key' => 'integrations'],
+    ['href' => '/settings/permissions', 'label' => 'Permissions', 'key' => 'permissions'],
+    ['href' => '/settings/audit', 'label' => 'Audit Log', 'key' => 'audit'],
     ['href' => '/settings/academic', 'label' => 'Academic Setup', 'key' => 'academic'],
     ['href' => '/setup', 'label' => 'Setup', 'key' => 'setup'],
 ];
@@ -83,6 +85,7 @@ $publicPage = in_array($page, ['login','setup','404'], true);
   <?php endforeach; ?>
 </body>
 </html>
+
 
 
 
